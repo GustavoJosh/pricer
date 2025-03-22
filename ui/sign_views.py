@@ -295,3 +295,65 @@ class SignViews:
         """Refresh the detail view after changes"""
         detail_window.destroy()
         self._show_sign_detail_window(sign_id)
+
+
+    def _show_sign_detail_window(self, sign_id):
+        """Show the detail window for a sign"""
+        # Create a new window for sign details
+        detail_window = tk.Toplevel(self.app.root)
+        detail_window.title("Sign Details")
+        detail_window.geometry("900x700")
+        detail_window.configure(padx=20, pady=20)
+        
+        # Get sign details
+        sign = queries.get_sign_by_id(sign_id)
+        
+        if not sign:
+            messagebox.showerror("Error", "Sign not found.")
+            detail_window.destroy()
+            return
+        
+        # Sign information section
+        info_frame = ttk.LabelFrame(detail_window, text="Sign Information")
+        info_frame.pack(fill=tk.X, pady=10)
+        
+        ttk.Label(info_frame, text=f"Name: {sign['SignName']}", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
+        ttk.Label(info_frame, text=f"Customer: {sign['CustomerInfo']}", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
+        ttk.Label(info_frame, text=f"Status: {sign['Status']}", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
+        ttk.Label(info_frame, text=f"Creation Date: {sign['CreationDate']}", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
+        ttk.Label(info_frame, text=f"Description: {sign['Description'] or 'N/A'}", font=("Arial", 12)).pack(anchor=tk.W, pady=5)
+        ttk.Label(info_frame, text=f"Total Cost: ${sign['TotalCost']:.2f}", font=("Arial", 12, "bold")).pack(anchor=tk.W, pady=5)
+        
+        # Action buttons for sign
+        action_frame = ttk.Frame(info_frame)
+        action_frame.pack(anchor=tk.W, pady=10)
+        
+        # Print invoice button
+        def print_invoice():
+            printer = PrintInvoice(sign_id)
+            printer.print_invoice()
+            
+        ttk.Button(action_frame, text="Print Invoice", command=print_invoice).pack(side=tk.LEFT, padx=5)
+        
+        # Components section
+        components = queries.get_components_by_sign_id(sign_id)
+        
+        components_frame = ttk.LabelFrame(detail_window, text="Components")
+        components_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+        
+        if components:
+            # Create a notebook (tabbed interface) for components
+            notebook = ttk.Notebook(components_frame)
+            notebook.pack(fill=tk.BOTH, expand=True, pady=10)
+            
+            for component in components:
+                self.component_views.add_component_tab(notebook, component, sign_id, detail_window)
+        else:
+            ttk.Label(components_frame, text="No components found.").pack(pady=20)
+        
+        # Add component button
+        ttk.Button(components_frame, text="Add New Component", 
+                  command=lambda: self.component_views.add_component(sign_id, detail_window, self._refresh_detail_view)).pack(pady=10)
+        
+        # Close button
+        ttk.Button(detail_window, text="Close", command=detail_window.destroy).pack(pady=10)

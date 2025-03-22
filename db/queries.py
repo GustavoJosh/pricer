@@ -98,8 +98,8 @@ def get_job_by_id(job_id):
 
 def get_job_by_details(job_name, unit_cost):
     """Get a job by its name and unit cost"""
-    query = "SELECT JobID FROM Jobs WHERE JobName = %s AND UnitCost = %s"
-    return db.execute_query(query, (job_name, unit_cost), fetchone=True)
+    query = "SELECT * FROM Jobs WHERE JobName = %s AND UnitCost = %s"
+    return db.execute_query(query, (job_name, unit_cost), fetchall=True)[0] if db.execute_query(query, (job_name, unit_cost), fetchall=True) else None
 
 def create_job(component_id, job_name, unit_cost, quantity):
     """Create a new job"""

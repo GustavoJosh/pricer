@@ -72,14 +72,18 @@ class JobViews:
         unit_cost = tree.item(selected_item[0], "values")[1].replace("$", "")
         quantity = tree.item(selected_item[0], "values")[2]
         
-        # Get job ID from database
-        job = queries.get_job_by_details(job_name, float(unit_cost))
-        
-        if not job:
-            messagebox.showerror("Error", "Job not found in database.")
-            return
+        # Get job ID from database - using get_job_by_id directly from primary key would be safer
+        try:
+            job = queries.get_job_by_details(job_name, float(unit_cost))
             
-        job_id = job['JobID']
+            if not job:
+                messagebox.showerror("Error", "Job not found in database.")
+                return
+                
+            job_id = job['JobID']
+        except Exception as e:
+            messagebox.showerror("Error", f"Error retrieving job: {e}")
+            return
         
         # Create dialog window
         dialog = tk.Toplevel(parent_window)
@@ -147,21 +151,25 @@ class JobViews:
             return
         
         # Get job ID from database
-        job = queries.get_job_by_details(job_name, float(unit_cost))
-        
-        if not job:
-            messagebox.showerror("Error", "Job not found in database.")
-            return
+        try:
+            # Wrap this in a try-except to catch any database errors
+            job = queries.get_job_by_details(job_name, float(unit_cost))
             
-        job_id = job['JobID']
-        
-        success = queries.delete_job(job_id)
-        
-        if success is not None:
-            messagebox.showinfo("Success", "Job deleted successfully!")
+            if not job:
+                messagebox.showerror("Error", "Job not found in database.")
+                return
+                
+            job_id = job['JobID']
             
-            # Refresh the detail view
-            self._refresh_detail_view(sign_id, parent_window)
+            success = queries.delete_job(job_id)
+            
+            if success is not None:
+                messagebox.showinfo("Success", "Job deleted successfully!")
+                
+                # Refresh the detail view
+                self._refresh_detail_view(sign_id, parent_window)
+        except Exception as e:
+            messagebox.showerror("Error", f"Error deleting job: {e}")
     
     def _refresh_detail_view(self, sign_id, parent_window):
         """Refresh the detail view after changes"""

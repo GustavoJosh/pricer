@@ -35,7 +35,8 @@ class DatabaseConnection:
                 host=os.getenv("DB_HOST"),
                 user=os.getenv("DB_USER"),  
                 password=os.getenv("DB_PASSWORD"),  
-                database=os.getenv("DB_NAME")
+                database=os.getenv("DB_NAME"),
+                consume_results=True  # Auto-consume unread results
             )
             if self.connection.is_connected():
                 print("Connected to MySQL database")
@@ -71,6 +72,10 @@ class DatabaseConnection:
                 result = cursor.fetchone()
             elif fetchall:
                 result = cursor.fetchall()
+            else:
+                # Consume results explicitly
+                while cursor.nextset():
+                    pass  # Exhaust all result sets
             
             if commit:
                 connection.commit()
@@ -84,10 +89,26 @@ class DatabaseConnection:
             return None
         finally:
             if cursor:
+                # Make sure to exhaust any remaining result sets before closing the cursor
+                try:
+                    while cursor.nextset():
+                        pass
+                except:
+                    pass  # Ignore any errors during cleanup
                 cursor.close()
     
     def close(self):
         """Close the database connection"""
-        if self.connection and self.connection.is_connected():
-            self.connection.close()
-            print("Database connection closed")
+        try:
+            if self.connection:
+                # Make sure we catch any connection errors during close
+                try:
+                    if self.connection.is_connected():
+                        # Ensure all cursors are closed and results consumed
+                        self.connection.cmd_reset_connection()
+                        self.connection.close()
+                        print("Database connection closed")
+                except Error as e:
+                    print(f"Error while closing connection: {e}")
+        except Exception as e:
+            print(f"Error closing database connection: {e}")
