@@ -9,6 +9,7 @@ import os
 import tkinter.messagebox as messagebox
 from datetime import datetime
 import db.queries as queries
+from decimal import Decimal
 
 class PrintInvoice:
     def __init__(self, sign_id):
@@ -49,8 +50,8 @@ class PrintInvoice:
             alignment=1,  # Center alignment
             spaceAfter=20
         )
-        elements.append(Paragraph("SIGN PROJECT INVOICE", title_style))
-        
+        elements.append(Paragraph("Cotizacion de carteles ICAM81", title_style))
+         
         # Add company info
         company_style = ParagraphStyle(
             'Company',
@@ -58,17 +59,16 @@ class PrintInvoice:
             fontSize=12,
             spaceAfter=20
         )
-        elements.append(Paragraph("Your Sign Business<br/>123 Sign Street<br/>Signtown, ST 12345<br/>Phone: (555) 123-4567", company_style))
+        elements.append(Paragraph("Impresiones ICAM81<br/>20 de Noviembre 1960<br/>La Paz, BCS.<br/>Cel: 612 157 1483", company_style))
         elements.append(Spacer(1, 0.2*inch))
         
         # Add invoice details
         invoice_data = [
-            ["Invoice Date:", datetime.now().strftime("%Y-%m-%d")],
-            ["Sign ID:", str(self.sign_data['SignID'])],
-            ["Sign Name:", self.sign_data['SignName']],
-            ["Customer:", self.sign_data['CustomerInfo']],
-            ["Status:", self.sign_data['Status']],
-            ["Creation Date:", self.sign_data['CreationDate'].strftime("%Y-%m-%d") if self.sign_data['CreationDate'] else "N/A"]
+            ["Fecha de cotizacion:", datetime.now().strftime("%Y-%m-%d")],
+            ["Cartel:", self.sign_data['SignName']],
+            ["Cliente:", self.sign_data['CustomerInfo']],
+            ["Estado:", self.sign_data['Status']],
+            ["Creado:", self.sign_data['CreationDate'].strftime("%Y-%m-%d") if self.sign_data['CreationDate'] else "N/A"]
         ]
         
         invoice_table = Table(invoice_data, colWidths=[2*inch, 4*inch])
@@ -85,15 +85,15 @@ class PrintInvoice:
         
         # Add description if available
         if self.sign_data['Description']:
-            elements.append(Paragraph("<b>Description:</b>", styles['Normal']))
+            elements.append(Paragraph("<b>Detalles:</b>", styles['Normal']))
             elements.append(Paragraph(self.sign_data['Description'], styles['Normal']))
             elements.append(Spacer(1, 0.2*inch))
         
         # Add components and jobs
-        elements.append(Paragraph("<b>Components and Jobs:</b>", styles['Normal']))
+        elements.append(Paragraph("<b>Detalles del trabajo:</b>", styles['Normal']))
         elements.append(Spacer(1, 0.1*inch))
         
-        total_amount = 0.0
+        total_amount = Decimal('0.0')  # Use Decimal instead of float
         
         for component in self.components:
             # Component header
@@ -104,24 +104,25 @@ class PrintInvoice:
             
             if jobs:
                 # Create jobs table
-                jobs_data = [["Job", "Unit Cost", "Quantity", "Amount"]]
-                component_total = 0.0
+                jobs_data = [["Componente", "Precio unitario", "Cantidad", "Monto"]]
+                component_total = Decimal('0.0')  # Use Decimal instead of float
                 
                 for job in jobs:
                     quantity = job['Quantity'] if job['Quantity'] is not None else "-"
-                    amount = job['Amount'] if job['Amount'] is not None else 0.0
+                    # Convert Amount to Decimal or 0 if None
+                    amount = Decimal(str(job['Amount'])) if job['Amount'] is not None else Decimal('0.0')
                     
                     jobs_data.append([
                         job['JobName'],
-                        f"${job['UnitCost']:.2f}",
+                        f"${float(job['UnitCost']):.2f}",  # Convert for display
                         str(quantity),
-                        f"${amount:.2f}" if amount else "-"
+                        f"${float(amount):.2f}" if amount else "-"  # Convert for display
                     ])
                     
-                    component_total += amount if amount else 0.0
+                    component_total += amount
                 
                 # Add component total
-                jobs_data.append(["", "", "<b>Component Total:</b>", f"<b>${component_total:.2f}</b>"])
+                jobs_data.append(["", "", "<b>Component Total:</b>", f"<b>${float(component_total):.2f}</b>"])
                 
                 jobs_table = Table(jobs_data, colWidths=[2.5*inch, 1.25*inch, 1.25*inch, 1.25*inch])
                 jobs_table.setStyle(TableStyle([
@@ -147,7 +148,7 @@ class PrintInvoice:
         
         # Add grand total
         elements.append(Spacer(1, 0.2*inch))
-        total_table = Table([["", "", "<b>GRAND TOTAL:</b>", f"<b>${total_amount:.2f}</b>"]], 
+        total_table = Table([["", "", "<b>GRAND TOTAL:</b>", f"<b>${float(total_amount):.2f}</b>"]], 
                             colWidths=[2.5*inch, 1.25*inch, 1.25*inch, 1.25*inch])
         total_table.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
