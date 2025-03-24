@@ -4,12 +4,13 @@ Component-related views and operations for the Sign Business application.
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 import db.queries as queries
-from .job_views import JobViews
 
 class ComponentViews:
     def __init__(self, parent_frame, app):
         self.parent_frame = parent_frame
         self.app = app
+        # Import here to avoid circular import
+        from .job_views import JobViews
         self.job_views = JobViews(parent_frame, app)
     
     def add_component(self, sign_id, parent_window, refresh_callback):
@@ -66,6 +67,36 @@ class ComponentViews:
         component_buttons = ttk.Frame(component_tab)
         component_buttons.pack(pady=10)
         
+        # Create a callback for refreshing just this tab
+        def refresh_component_tab():
+            # Clear the treeview
+            for item in job_tree.get_children():
+                job_tree.delete(item)
+                
+            # Get updated jobs
+            updated_jobs = queries.get_jobs_by_component_id(component['ComponentID'])
+            
+            # Re-populate the treeview
+            if updated_jobs:
+                for job in updated_jobs:
+                    quantity = job['Quantity'] if job['Quantity'] is not None else "-"
+                    amount = f"${job['Amount']:.2f}" if job['Amount'] is not None else "-"
+                    
+                    job_tree.insert("", tk.END, values=(
+                        job['JobName'],
+                        f"${job['UnitCost']:.2f}", 
+                        quantity,
+                        amount
+                    ))
+            
+            # Update the tab text with new subtotal
+            updated_component = queries.get_component_by_id(component['ComponentID'])
+            if updated_component:
+                tab_id = notebook.select()
+                tab_index = notebook.index(tab_id)
+                notebook.tab(tab_index, text=f"{updated_component['ComponentName']} (${updated_component['Subtotal']:.2f})")
+        
+        # We'll still use the full refresh for now since we need to update the total cost as well
         ttk.Button(component_buttons, text="Add Job", 
                   command=lambda c_id=component['ComponentID']: 
                   self.job_views.add_job(c_id, parent_window, sign_id)).pack(side=tk.LEFT, padx=5)

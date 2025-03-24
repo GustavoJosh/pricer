@@ -121,8 +121,13 @@ class PrintInvoice:
                     
                     component_total += amount
                 
-                # Add component total
-                jobs_data.append(["", "", "<b>Component Total:</b>", f"<b>${float(component_total):.2f}</b>"])
+                # Add component total - use Paragraph for HTML formatting
+                jobs_data.append([
+                    "",
+                    "",
+                    Paragraph("<b>Total:</b>", styles['Normal']), 
+                    Paragraph(f"<b>${float(component_total):.2f}</b>", styles['Normal'])
+                ])
                 
                 jobs_table = Table(jobs_data, colWidths=[2.5*inch, 1.25*inch, 1.25*inch, 1.25*inch])
                 jobs_table.setStyle(TableStyle([
@@ -146,10 +151,17 @@ class PrintInvoice:
                 elements.append(Paragraph("No jobs for this component.", styles['Normal']))
                 elements.append(Spacer(1, 0.1*inch))
         
-        # Add grand total
+        # Add grand total - use Paragraph for HTML formatting
         elements.append(Spacer(1, 0.2*inch))
-        total_table = Table([["", "", "<b>GRAND TOTAL:</b>", f"<b>${float(total_amount):.2f}</b>"]], 
-                            colWidths=[2.5*inch, 1.25*inch, 1.25*inch, 1.25*inch])
+        total_table = Table([
+            [
+                "",
+                "",
+                Paragraph("<b>GRAND TOTAL:</b>", styles['Normal']),
+                Paragraph(f"<b>${float(total_amount):.2f}</b>", styles['Normal'])
+            ]
+        ], colWidths=[2.5*inch, 1.25*inch, 1.25*inch, 1.25*inch])
+        
         total_table.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 12),

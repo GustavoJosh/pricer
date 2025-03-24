@@ -12,14 +12,15 @@ class SignViews:
         self.parent_frame = parent_frame
         self.app = app
         self.component_views = ComponentViews(parent_frame, app)
+        self.current_windows = {}  # Track open windows by sign_id
     
     def show_signs_list(self):
         """Display list of all signs"""
         # Header
-        ttk.Label(self.parent_frame, text="SIGN PROJECTS", font=("Arial", 14, "bold")).pack(pady=10)
+        ttk.Label(self.parent_frame, text="Lista de carteles", font=("Arial", 14, "bold")).pack(pady=10)
         
         # Create treeview
-        columns = ("ID", "Sign Name", "Customer", "Creation Date", "Status", "Total Cost")
+        columns = ("ID", "Cartel", "Cliente", "Creado", "Estado", "Costo Total")
         tree = ttk.Treeview(self.parent_frame, columns=columns, show="headings", height=20)
         
         # Define headings
@@ -60,11 +61,11 @@ class SignViews:
         button_frame = ttk.Frame(self.parent_frame)
         button_frame.pack(pady=10)
         
-        ttk.Button(button_frame, text="View Sign Details", 
+        ttk.Button(button_frame, text="Ver detalles del cartel", 
                   command=lambda: self._view_sign_details(tree)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="Edit Sign", 
+        ttk.Button(button_frame, text="Editar detalles del cartel", 
                   command=lambda: self._edit_sign(tree)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="Delete Sign", 
+        ttk.Button(button_frame, text="Eliminar cartel", 
                   command=lambda: self._delete_sign(tree)).pack(side=tk.LEFT, padx=5)
     
     def show_add_sign_form(self):
@@ -158,7 +159,17 @@ class SignViews:
             return
         
         sign_id = tree.item(selected_item[0], "values")[0]
-        self._show_sign_detail_window(sign_id)    
+        
+        # Check if window is already open
+        if sign_id in self.current_windows and self.current_windows[sign_id].winfo_exists():
+            # If window exists, bring it to front
+            self.current_windows[sign_id].lift()
+            self.current_windows[sign_id].focus_set()
+            # Refresh the content
+            self._refresh_detail_view(sign_id, self.current_windows[sign_id])
+        else:
+            # Create new window
+            self._show_sign_detail_window(sign_id)    
     
     def _edit_sign(self, tree):
         """Edit the selected sign"""
@@ -179,6 +190,10 @@ class SignViews:
         dialog.title("Edit Sign")
         dialog.geometry("500x300")
         dialog.configure(padx=20, pady=20)
+        
+        # Make dialog modal
+        dialog.transient(self.app.root)
+        dialog.grab_set()
         
         # Form fields
         ttk.Label(dialog, text="Sign Name:").grid(row=0, column=0, sticky=tk.W, pady=5)
@@ -217,9 +232,16 @@ class SignViews:
                 messagebox.showinfo("Success", "Sign updated successfully!")
                 dialog.destroy()
                 self.app.show_signs()  # Refresh sign list
+                
+                # Update detail window if open
+                if sign_id in self.current_windows and self.current_windows[sign_id].winfo_exists():
+                    self._refresh_detail_view(sign_id, self.current_windows[sign_id])
         
         ttk.Button(dialog, text="Save Changes", command=save_changes).grid(row=4, column=0, pady=20)
         ttk.Button(dialog, text="Cancel", command=dialog.destroy).grid(row=4, column=1, pady=20)
+        
+        # Wait for dialog to close
+        self.app.root.wait_window(dialog)
     
     def _delete_sign(self, tree):
         """Delete the selected sign"""
@@ -240,12 +262,31 @@ class SignViews:
         success = queries.delete_sign(sign_id)
         if success is not None:  # None indicates error
             messagebox.showinfo("Success", "Sign deleted successfully!")
+            
+            # Close detail window if open
+            if sign_id in self.current_windows and self.current_windows[sign_id].winfo_exists():
+                self.current_windows[sign_id].destroy()
+                
             self.app.show_signs()  # Refresh sign list
     
     def _refresh_detail_view(self, sign_id, detail_window):
         """Refresh the detail view after changes"""
-        detail_window.destroy()
+        # For a complete refresh, destroy and recreate window
+        if detail_window and detail_window.winfo_exists():
+            detail_window.destroy()
         self._show_sign_detail_window(sign_id)
+        
+        # For a partial refresh (alternative approach):
+        # self._update_sign_details(sign_id, detail_window)
+    
+    def _update_sign_details(self, sign_id, detail_window):
+        """Update only parts of the detail window that need updating"""
+        # This is a placeholder for a more sophisticated update mechanism
+        # Instead of destroying and recreating the entire window
+        # Implementation would require storing references to UI elements
+        pass
+
+    # Modify the _show_sign_detail_window method in sign_views.py to add a refresh button:
 
     def _show_sign_detail_window(self, sign_id):
         """Show the detail window for a sign"""
@@ -282,8 +323,13 @@ class SignViews:
         def print_invoice():
             printer = PrintInvoice(sign_id)
             printer.print_invoice()
+        
+        # Refresh button - Add this new button
+        def refresh_view():
+            self._refresh_detail_view(sign_id, detail_window)
             
         ttk.Button(action_frame, text="Print Invoice", command=print_invoice).pack(side=tk.LEFT, padx=5)
+        ttk.Button(action_frame, text="Refresh View", command=refresh_view).pack(side=tk.LEFT, padx=5)
         
         # Components section
         components = queries.get_components_by_sign_id(sign_id)
@@ -303,7 +349,9 @@ class SignViews:
         
         # Add component button
         ttk.Button(components_frame, text="Add New Component", 
-                  command=lambda: self.component_views.add_component(sign_id, detail_window, self._refresh_detail_view)).pack(pady=10)
+                command=lambda: self.component_views.add_component(sign_id, detail_window, self._refresh_detail_view)).pack(pady=10)
         
         # Close button
         ttk.Button(detail_window, text="Close", command=detail_window.destroy).pack(pady=10)
+        
+        return detail_window

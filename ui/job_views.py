@@ -10,6 +10,8 @@ class JobViews:
         self.parent_frame = parent_frame
         self.app = app
     
+    # Update the add_job method in job_views.py to make dialog modal:
+
     def add_job(self, component_id, parent_window, sign_id):
         """Add a new job to a component"""
         # Create dialog window
@@ -17,7 +19,11 @@ class JobViews:
         dialog.title("Add New Job")
         dialog.geometry("400x250")
         dialog.configure(padx=20, pady=20)
-        
+    
+      # Make dialog modal
+        dialog.transient(parent_window)
+        dialog.grab_set()
+    
         # Form fields
         ttk.Label(dialog, text="Job Name:").grid(row=0, column=0, sticky=tk.W, pady=5)
         name_var = tk.StringVar()
@@ -31,7 +37,7 @@ class JobViews:
         quantity_var = tk.StringVar()
         ttk.Entry(dialog, textvariable=quantity_var, width=30).grid(row=2, column=1, sticky=tk.W, pady=5)
         ttk.Label(dialog, text="(Leave empty if not applicable)").grid(row=2, column=2, sticky=tk.W, pady=5)
-        
+    
         # Save button
         def save_job():
             name = name_var.get().strip()
@@ -50,16 +56,19 @@ class JobViews:
                 
                 if job_id is not None:
                     messagebox.showinfo("Success", "Job added successfully!")
-                    dialog.destroy()
-                    
-                    # Get the detail view function from parent to refresh
-                    self._refresh_detail_view(sign_id, parent_window)
+                    dialog.destroy()  # This should close the dialog
+    
+                # Get the detail view function from parent to refresh
+                self._refresh_detail_view(sign_id, parent_window)
                 
             except ValueError:
                 messagebox.showwarning("Validation Error", "Cost and quantity must be valid numbers.")
         
         ttk.Button(dialog, text="Save Job", command=save_job).grid(row=3, column=0, pady=20)
         ttk.Button(dialog, text="Cancel", command=dialog.destroy).grid(row=3, column=1, pady=20)
+        
+        # This ensures dialog is properly handled
+        parent_window.wait_window(dialog)
     
     def edit_job(self, tree, parent_window, sign_id):
         """Edit the selected job"""
@@ -133,6 +142,11 @@ class JobViews:
         
         ttk.Button(dialog, text="Save Changes", command=save_changes).grid(row=3, column=0, pady=20)
         ttk.Button(dialog, text="Cancel", command=dialog.destroy).grid(row=3, column=1, pady=20)
+        
+        # Make dialog modal
+        dialog.transient(parent_window)
+        dialog.grab_set()
+        parent_window.wait_window(dialog)
     
     def delete_job(self, tree, parent_window, sign_id):
         """Delete the selected job"""
@@ -173,9 +187,13 @@ class JobViews:
     
     def _refresh_detail_view(self, sign_id, parent_window):
         """Refresh the detail view after changes"""
-        parent_window.destroy()
-        
-        # Create a new detail window
+        # Instead of destroying and recreating the window, we can refresh just the components part
+        # Store a reference to the current window and refresh it
         from ui.sign_views import SignViews
         sign_views = SignViews(self.parent_frame, self.app)
+        
+        # This is a better approach than destroying and recreating the window
+        # But we need to update the sign_views.py file to support this
+        # For now, we'll use the existing method
+        parent_window.destroy()
         sign_views._show_sign_detail_window(sign_id)

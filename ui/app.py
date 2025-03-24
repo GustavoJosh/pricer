@@ -38,13 +38,13 @@ class SignBusinessApp:
         nav_frame = ttk.Frame(self.main_frame, width=200)
         nav_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         
-        ttk.Label(nav_frame, text="NAVIGATION", font=("Arial", 12, "bold")).pack(pady=10)
+        ttk.Label(nav_frame, text="Navegacion", font=("Arial", 12, "bold")).pack(pady=10)
         
         # Navigation buttons
-        ttk.Button(nav_frame, text="Signs", command=self.show_signs, width=20).pack(pady=5)
-        ttk.Button(nav_frame, text="Add New Sign", command=self.add_new_sign, width=20).pack(pady=5)
+        ttk.Button(nav_frame, text="Ver carteles", command=self.show_signs, width=20).pack(pady=5)
+        ttk.Button(nav_frame, text="Agregar nuevo cartel", command=self.add_new_sign, width=20).pack(pady=5)
         ttk.Separator(nav_frame, orient='horizontal').pack(fill='x', pady=10)
-        ttk.Button(nav_frame, text="Exit", command=self.root.destroy, width=20).pack(pady=5)
+        ttk.Button(nav_frame, text="Salir", command=self.root.destroy, width=20).pack(pady=5)
     
     def clear_content_frame(self):
         """Clear all widgets from the content frame"""
